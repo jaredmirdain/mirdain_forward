@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.21)
 if(CMAKE_HOST_APPLE AND NOT CMAKE_OSX_DEPLOYMENT_TARGET)
     set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS version" FORCE)
 endif()
-project(mirdain_forward VERSION 1.1.1 LANGUAGES C CXX)
+project(mirdain_forward VERSION 1.1.2 LANGUAGES C CXX)
 
 include(FetchContent)
 if(POLICY CMP0135)
@@ -61,6 +61,9 @@ set_target_properties(mirdain_forward PROPERTIES
 )
 
 include(cmake/Updates.cmake)
+# Opened on launch until the website reports a saved printer; override only for local test builds.
+set(FORWARD_SETUP_URL "https://mirdainsystems.com/forward" CACHE STRING "Forward page that hosts printer setup")
+target_compile_definitions(mirdain_forward PRIVATE FORWARD_SETUP_URL="${FORWARD_SETUP_URL}")
 
 if(APPLE)
     set_target_properties(mirdain_forward PROPERTIES OUTPUT_NAME "Mirdain Forward")

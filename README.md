@@ -9,7 +9,7 @@ ELEGOO, PrusaLink, or Bambu LAN printer, then requests printing. No account or
 queue. Printer names, IDs, and settings are saved locally; printer credentials
 arrive in each request.
 
-The menu lists each printer directly, followed by Check for Updates, Preferences, the current transfer status, and Quit. Only one
+The menu lists each printer directly, followed by Check for Updates, Preferences, Set Up Printer, the current transfer status, and Quit. Only one
 transfer runs at a time. Success means the printer accepted the print request, not that the
 first layer has begun. Busy printers are not interrupted. Start commands are
 never automatically retried; after an unconfirmed start, check the printer
@@ -28,6 +28,13 @@ to off. Save your choices, or choose **Skip** to keep the defaults; either optio
 dismisses setup for future launches. Closing the setup dialog also skips it.
 Choose **Preferences…** from the menu bar / system tray to change either choice
 later. Existing users see the setup dialog once after updating.
+
+After that dialog, Forward opens printer setup at
+`https://mirdainsystems.com/forward#setup` in the default browser on every launch
+until the website reports a saved printer through `POST /setup-complete`. **Set Up
+Printer…** reopens the page at any time. Installs that finished first launch before
+1.1.2 are treated as already set up. Test builds can point at a local preview with
+`-DFORWARD_SETUP_URL=http://localhost:3000/forward/` (Forward appends `#setup`).
 
 Automatic startup is registered only when you explicitly enable it. On macOS
 13+, `src/platform/macos/StartupRegistration.mm` uses ServiceManagement's
@@ -484,6 +491,10 @@ printer or starting a transfer. The Forward download page uses this endpoint
 during guided setup. It must receive this response before saving the printer
 profile and forwarding the user to the slicer. Older releases without this
 endpoint need to be updated before completing guided setup.
+
+`POST http://127.0.0.1:18744/setup-complete` records that the website saved a
+printer, so Forward stops opening setup on launch. It takes no body, uses the
+same origin checks as `/health`, and never contacts a printer.
 
 The server handles CORS preflights for `https://slicer.mirdainsystems.com`,
 `https://mirdainsystems.com`, `https://www.mirdainsystems.com`, and local development

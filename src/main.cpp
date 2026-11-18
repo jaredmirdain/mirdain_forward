@@ -9,6 +9,7 @@
 #include <QApplication>
 #include <QBuffer>
 #include <QCryptographicHash>
+#include <QDesktopServices>
 #include <QDir>
 #include <QFileInfo>
 #include <QFontMetrics>
@@ -40,6 +41,7 @@
 
 using Status = QHttpServerResponder::StatusCode;
 constexpr quint16 Port = 18744;
+static const QUrl SetupUrl(FORWARD_SETUP_URL "#setup");
 
 static bool allowedOrigin(const QByteArray &origin)
 {
@@ -98,6 +100,7 @@ class Forwarder : public QObject {
 public:
     Forwarder() : printerSettings(config, menu)
     {
+        menu.addAction("Set Up Printer…", this, [] { QDesktopServices::openUrl(SetupUrl); });
         status = menu.addAction("Idle - 127.0.0.1:18744");
         status->setEnabled(false);
         menu.addSeparator();
@@ -122,6 +125,23 @@ public:
                 headers.append("Cache-Control", "no-store");
                 result.setHeaders(headers);
                 return result;
+            });
+
+        server.route("/setup-complete", QHttpServerRequest::Method::Post | QHttpServerRequest::Method::Options,
+            this, [this](const QHttpServerRequest &request) {
+                const auto origin = request.headers().value("Origin").toByteArray();
+                if (!allowedOrigin(origin))
+                    return response(origin, Status::Forbidden, {{"error", "Origin not allowed."}});
+                if (request.method() == QHttpServerRequest::Method::Options)
+                    return response(origin, Status::NoContent, {});
+                try {
+                    auto values = config.section("preferences");
+                    values.insert("printer_setup_complete", true);
+                    config.setSection("preferences", values);
+                } catch (const std::exception &error) {
+                    return response(origin, Status::InternalServerError, {{"error", QString::fromUtf8(error.what())}});
+                }
+                return response(origin, Status::Ok, {{"ok", true}});
             });
 
         server.route("/send", QHttpServerRequest::Method::Post | QHttpServerRequest::Method::Options,
@@ -183,7 +203,20 @@ public:
         return listener->listen(QHostAddress::LocalHost, Port) && server.bind(listener);
     }
 
-    void promptOnFirstLaunch() { preferences.promptOnFirstLaunch(); updater.start(); }
+    void promptOnFirstLaunch()
+    {
+        auto values = config.section("preferences");
+        if (!values.contains("printer_setup_complete")) {
+            // Installs from before this flag had already finished first launch; don't reopen setup for them.
+            values.insert("printer_setup_complete", values.value("setup_complete").toBool());
+            config.setSection("preferences", values);
+        }
+        preferences.promptOnFirstLaunch();
+        // Reopen the website setup until it reports a saved printer. Forward is already listening for Verify.
+        if (!config.section("preferences").value("printer_setup_complete").toBool())
+            QDesktopServices::openUrl(SetupUrl);
+        updater.start();
+    }
 
 private:
     QHttpServer server;
