@@ -24,16 +24,16 @@ Long menu status messages are ellipsized; the tray tooltip retains the full text
 
 On the first successful launch, Forward asks whether to **launch when you sign
 in** and **notify you when a plate is sent through Forward**. Both choices default
-to off. Save your choices, or choose **Skip** to keep the defaults; either option
-dismisses setup for future launches. Closing the setup dialog also skips it.
+to off. Choose **Open Setup** to save your choices, or **Skip** to keep the defaults;
+either option dismisses setup for future launches. Closing the setup dialog also skips it.
 Choose **Preferences…** from the menu bar / system tray to change either choice
 later. Existing users see the setup dialog once after updating.
 
-After that dialog, Forward opens printer setup at
-`https://mirdainsystems.com/forward#setup` in the default browser on every launch
-until the website reports a saved printer through `POST /setup-complete`. **Set Up
-Printer…** reopens the page at any time. Installs that finished first launch before
-1.1.2 are treated as already set up. Test builds can point at a local preview with
+**Open Setup** also opens printer setup at
+`https://mirdainsystems.com/forward#setup` in the default browser, once. **Set Up
+Printer…** reopens the page at any time. On macOS, when Safari is the default, the page
+opens in an installed Chrome, Edge, Brave, Arc, Firefox, or Chromium instead, because
+Safari cannot reach Forward from the website (`src/platform/macos/SupportedBrowser.mm`). Test builds can point at a local preview with
 `-DFORWARD_SETUP_URL=http://localhost:3000/forward/` (Forward appends `#setup`).
 
 Automatic startup is registered only when you explicitly enable it. On macOS
@@ -491,10 +491,6 @@ printer or starting a transfer. The Forward download page uses this endpoint
 during guided setup. It must receive this response before saving the printer
 profile and forwarding the user to the slicer. Older releases without this
 endpoint need to be updated before completing guided setup.
-
-`POST http://127.0.0.1:18744/setup-complete` records that the website saved a
-printer, so Forward stops opening setup on launch. It takes no body, uses the
-same origin checks as `/health`, and never contacts a printer.
 
 The server handles CORS preflights for `https://slicer.mirdainsystems.com`,
 `https://mirdainsystems.com`, `https://www.mirdainsystems.com`, and local development
